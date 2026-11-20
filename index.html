@@ -2890,11 +2890,11 @@ let nextDownwardAirflowDistance = 0;
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
         const sounds = {};
         const soundUrls = {
-            pickupCoin: 'https://192.168.1.160:5001/api/download/b6b7a081?download=0',
-            jump: 'https://192.168.1.160:5001/api/download/bbe7ba5f?download=0',
-            explosion: 'https://192.168.1.160:5001/api/download/96040701?download=0',
-            laserShoot: 'https://192.168.1.160:5001/api/download/81274f1f?download=0',
-            pickupBoost: 'https://192.168.1.160:5001/api/download/cfdf3842?download=0'
+            pickupCoin: 'sounds/pickupCoin.wav',
+            jump: 'sounds/jump.wav',
+            explosion: 'sounds/explosion.wav',
+            laserShoot: 'sounds/laserShoot.wav',
+            pickupBoost: 'sounds/pickupBoost.wav'
         };
 
         // 加载音效（带超时机制）
