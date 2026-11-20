@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>轨道跑酷 - 障碍物图鉴</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3e 100%);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .header {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #fff;
+            font-size: 2rem;
+            text-shadow: 0 0 20px rgba(0, 217, 255, 0.5);
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .canvas-container {
+            flex: 1;
+            position: relative;
+        }
+
+        #canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .info-panel {
+            width: 400px;
+            background: rgba(20, 20, 40, 0.9);
+            border-left: 1px solid rgba(0, 217, 255, 0.3);
+            padding: 30px;
+            overflow-y: auto;
+            position: relative;
+            z-index: 10;
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .nav-btn {
+            background: rgba(0, 217, 255, 0.2);
+            border: 1px solid rgba(0, 217, 255, 0.5);
+            color: #00d9ff;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .nav-btn:hover {
+            background: rgba(0, 217, 255, 0.4);
+            transform: scale(1.05);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .obstacle-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .obstacle-name {
+            font-size: 1.5rem;
+            color: #fff;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .obstacle-tag {
+            display: inline-block;
+            background: rgba(0, 217, 255, 0.2);
+            color: #00d9ff;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-bottom: 15px;
+        }
+
+        .obstacle-tag.ground {
+            background: rgba(136, 136, 136, 0.3);
+            color: #aaa;
+        }
+
+        .obstacle-tag.airway {
+            background: rgba(0, 217, 255, 0.2);
+            color: #00d9ff;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .info-label {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .info-value {
+            color: #fff;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .info-value.health-high {
+            color: #00ff88;
+        }
+
+        .info-value.health-medium {
+            color: #ffaa00;
+        }
+
+        .info-value.health-low {
+            color: #ff4444;
+        }
+
+        .info-value.gold {
+            color: #ffd700;
+        }
+
+        .description {
+            margin-top: 20px;
+            color: #ccc;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .description strong {
+            color: #00d9ff;
+        }
+
+        .warning {
+            background: rgba(255, 170, 0, 0.1);
+            border-left: 3px solid #ffaa00;
+            padding: 10px 15px;
+            margin-top: 15px;
+            color: #ffaa00;
+            font-size: 0.85rem;
+            border-radius: 0 5px 5px 0;
+        }
+
+        .hint {
+            background: rgba(0, 255, 136, 0.1);
+            border-left: 3px solid #00ff88;
+            padding: 10px 15px;
+            margin-top: 15px;
+            color: #00ff88;
+            font-size: 0.85rem;
+            border-radius: 0 5px 5px 0;
+        }
+
+        .back-btn {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #fff;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(-50%) translateY(-2px);
+        }
+
+        .rotation-hint {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.8rem;
+            z-index: 10;
+        }
+
+        .obstacle-index {
+            text-align: center;
+            color: #666;
+            font-size: 0.85rem;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>障碍物图鉴</h1>
+        <p>了解每种障碍物的特性和应对方法</p>
+    </div>
+
+    <div class="container">
+        <div class="canvas-container">
+            <canvas id="canvas"></canvas>
+            <div class="rotation-hint">拖动鼠标旋转视角 | 滚轮缩放</div>
+        </div>
+
+        <div class="info-panel">
+            <div class="obstacle-index" id="obstacleIndex">1 / 6</div>
+            
+            <div class="nav-buttons">
+                <button class="nav-btn" id="prevBtn" onclick="prevObstacle()">上一个</button>
+                <button class="nav-btn" id="nextBtn" onclick="nextObstacle()">下一个</button>
+            </div>
+
+            <div id="obstacleCard" class="obstacle-card">
+                <div class="obstacle-name" id="obstacleName">障碍物名称</div>
+                <span class="obstacle-tag" id="obstacleTag">地面</span>
+                
+                <div class="info-row">
+                    <span class="info-label">血量</span>
+                    <span class="info-value" id="obstacleHealth">1</span>
+                </div>
+                
+                <div class="info-row">
+                    <span class="info-label">击毁奖励</span>
+                    <span class="info-value" id="obstacleReward">10金币</span>
+                </div>
+                
+                <div class="info-row">
+                    <span class="info-label">出现位置</span>
+                    <span class="info-value" id="obstacleLocation">地面轨道</span>
+                </div>
+                
+                <div class="description" id="obstacleDesc">
+                    障碍物描述信息...
+                </div>
+            </div>
+
+            <button class="back-btn" onclick="goBack()">返回主菜单</button>
+        </div>
+    </div>
+
+    <script src="three.min.js"></script>
+    <script>
+        const obstacles = [
+            {
+                id: 'ground_normal',
+                name: '地面普通障碍物',
+                tag: '地面',
+                tagClass: 'ground',
+                health: 1,
+                healthClass: 'health-low',
+                reward: '50积分',
+                location: '地面轨道',
+                description: '最基础的地面障碍物，灰色立方体。需要跳跃躲避或用加速冲撞摧毁。碰撞会导致速度大幅下降并损失1点生命值。',
+                create: (scene) => {
+                    const geometry = new THREE.BoxGeometry(1.5, 1.0, 1.5);
+                    const material = new THREE.MeshStandardMaterial({
+                        color: 0x444444,
+                        metalness: 0.8,
+                        roughness: 0.3
+                    });
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.position.y = 0.5;
+                    return mesh;
+                }
+            },
+            {
+                id: 'ground_tall',
+                name: '地面大型障碍物',
+                tag: '地面',
+                tagClass: 'ground',
+                health: 1,
+                healthClass: 'health-low',
+                reward: '50积分 + 2-4金币',
+                location: '地面轨道',
+                description: '长条形障碍物，横跨整条轨道。无法直接跳跃通过，必须绕开或加速冲撞。顶部会随机生成2-4个金币。碰撞会导致速度大幅下降并损失1点生命值。',
+                create: (scene) => {
+                    const geometry = new THREE.BoxGeometry(7.5, 2.2, 1.5);
+                    const material = new THREE.MeshStandardMaterial({
+                        color: 0x333333,
+                        metalness: 0.7,
+                        roughness: 0.4
+                    });
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.position.y = 1.1;
+
+                    const coinGeometry = new THREE.CylinderGeometry(0.3, 0.3, 0.08, 16);
+                    const coinMaterial = new THREE.MeshStandardMaterial({
+                        color: 0xffd700,
+                        emissive: 0xffaa00,
+                        emissiveIntensity: 0.5,
+                        metalness: 0.9,
+                        roughness: 0.1
+                    });
+                    for (let i = 0; i < 3; i++) {
+                        const coin = new THREE.Mesh(coinGeometry, coinMaterial);
+                        coin.position.set(-3 + i * 3, 2.4, 0);
+                        coin.rotation.x = Math.PI / 2;
+                        mesh.add(coin);
+                    }
+
+                    return mesh;
+                }
+            },
+            {
+                id: 'airway_wall',
+                name: '浮空障碍物墙',
+                tag: '气流跑道',
+                tagClass: 'airway',
+                health: 1,
+                healthClass: 'health-low',
+                reward: '10金币/个',
+                location: '气流跑道',
+                description: '由多个红色小方块组成的墙体，完全阻挡跑道。必须使用子弹射击击毁每个小方块才能通过。每个小方块血量为1，击毁一个奖励10金币。碰撞会导致速度下降并进入0.5秒无敌时间。',
+                create: (scene) => {
+                    const group = new THREE.Group();
+                    const blockWidth = 2;
+                    const blockHeight = 1.5;
+                    const blockDepth = 1;
+                    
+                    const material = new THREE.MeshStandardMaterial({
+                        color: 0xff4444,
+                        emissive: 0xff2222,
+                        emissiveIntensity: 0.5,
+                        metalness: 0.7,
+                        roughness: 0.3
+                    });
+
+                    for (let x = 0; x < 5; x++) {
+                        for (let y = 0; y < 3; y++) {
+                            const geometry = new THREE.BoxGeometry(blockWidth, blockHeight, blockDepth);
+                            const block = new THREE.Mesh(geometry, material);
+                            const posX = (x - 2) * blockWidth + blockWidth / 2;
+                            const posY = y * blockHeight + blockHeight / 2;
+                            block.position.set(posX, posY, 0);
+                            group.add(block);
+                        }
+                    }
+                    group.position.y = 0;
+                    return group;
+                }
+            },
+            {
+                id: 'gold_obstacle',
+                name: '金币障碍物',
+                tag: '气流跑道',
+                tagClass: 'airway',
+                health: 3,
+                healthClass: 'health-high',
+                reward: '120-200积分',
+                location: '气流跑道',
+                description: '金色圆柱体障碍物，血量为3，需要射击3次才能击毁。击毁后会获得120-200积分奖励，并播放爆金币特效。玩家碰撞后会损失1点生命值，但障碍物会被摧毁并返回一半积分。血条满时不显示。',
+                create: (scene) => {
+                    const group = new THREE.Group();
+                    const geometry = new THREE.CylinderGeometry(1, 1, 2, 32);
+                    const material = new THREE.MeshStandardMaterial({
+                        color: 0xffd700,
+                        emissive: 0xffaa00,
+                        emissiveIntensity: 0.8,
+                        metalness: 0.9,
+                        roughness: 0.2
+                    });
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.position.y = 1;
+                    group.add(mesh);
+
+                    const bgGeometry = new THREE.BoxGeometry(3, 0.3, 0.1);
+                    const bgMaterial = new THREE.MeshBasicMaterial({ color: 0x333333 });
+                    const bgMesh = new THREE.Mesh(bgGeometry, bgMaterial);
+                    bgMesh.position.y = 2.5;
+                    group.add(bgMesh);
+
+                    const barGeometry = new THREE.BoxGeometry(3, 0.2, 0.15);
+                    const barMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+                    const barMesh = new THREE.Mesh(barGeometry, barMaterial);
+                    barMesh.position.y = 2.5;
+                    group.add(barMesh);
+
+                    return group;
+                }
+            },
+            {
+                id: 'octahedron_obstacle',
+                name: '八面体障碍物',
+                tag: '气流跑道',
+                tagClass: 'airway',
+                health: 2,
+                healthClass: 'health-medium',
+                reward: '80积分',
+                location: '气流跑道',
+                description: '蓝色八面体障碍物，血量为2，需要射击2次才能击毁。特点是会在固定位置上下浮动，增加瞄准难度。击毁后获得80积分奖励。碰撞会损失1点生命值并被摧毁。',
+                create: (scene) => {
+                    const geometry = new THREE.OctahedronGeometry(1);
+                    const material = new THREE.MeshStandardMaterial({
+                        color: 0x0088ff,
+                        emissive: 0x0044aa,
+                        emissiveIntensity: 0.6,
+                        metalness: 0.8,
+                        roughness: 0.3
+                    });
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.position.y = 1;
+                    return mesh;
+                },
+                animate: (mesh, time) => {
+                    mesh.position.y = 1 + Math.sin(time * 1.0) * 1.5;
+                }
+            },
+            {
+                id: 'sphere_obstacle',
+                name: '普通球形障碍物',
+                tag: '气流跑道',
+                tagClass: 'airway',
+                health: 1,
+                healthClass: 'health-low',
+                reward: '30积分',
+                location: '气流跑道',
+                description: '灰色金属球体障碍物，血量为1，射击一次即可击毁。高度随机生成在玩家活动范围内。击毁后获得30积分奖励。碰撞会损失1点生命值并被摧毁。',
+                create: (scene) => {
+                    const geometry = new THREE.SphereGeometry(0.75, 32, 32);
+                    const material = new THREE.MeshStandardMaterial({
+                        color: 0x888888,
+                        emissive: 0x444444,
+                        emissiveIntensity: 0.3,
+                        metalness: 0.7,
+                        roughness: 0.4
+                    });
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.position.y = 1;
+                    return mesh;
+                }
+            },
+            {
+                id: 'coin',
+                name: '金币',
+                tag: '道具',
+                tagClass: 'ground',
+                health: '-',
+                healthClass: '',
+                reward: '15积分',
+                location: '地面轨道',
+                description: '金色圆形道具，悬浮在地面上方。收集后获得15积分。通常成组出现（1-3个），在大型障碍物顶部也会随机生成2-4个。',
+                create: (scene) => {
+                    const group = new THREE.Group();
+                    const coinGeometry = new THREE.CylinderGeometry(0.3, 0.3, 0.08, 32);
+                    const coinMaterial = new THREE.MeshStandardMaterial({
+                        color: 0xffd700,
+                        emissive: 0xffaa00,
+                        emissiveIntensity: 0.5,
+                        metalness: 0.9,
+                        roughness: 0.1
+                    });
+                    for (let i = 0; i < 3; i++) {
+                        const coin = new THREE.Mesh(coinGeometry, coinMaterial);
+                        coin.position.set(0, 0.8, -i * 1.5);
+                        coin.rotation.x = Math.PI / 2;
+                        group.add(coin);
+                    }
+                    return group;
+                },
+                animate: (mesh, time) => {
+                    mesh.children.forEach((child, i) => {
+                        child.rotation.y = time * 3 + i;
+                    });
+                }
+            },
+            {
+                id: 'boost',
+                name: '加速补给',
+                tag: '道具',
+                tagClass: 'ground',
+                health: '-',
+                healthClass: '',
+                reward: '5格/秒加速',
+                location: '地面轨道',
+                description: '蓝绿色箭头形状的道具，收集后可获得5格/秒的速度提升，持续5秒。每隔约150格生成一次。',
+                create: (scene) => {
+                    const group = new THREE.Group();
+                    
+                    const arrowShape = new THREE.Shape();
+                    arrowShape.moveTo(0, 0.5);
+                    arrowShape.lineTo(0.3, 0);
+                    arrowShape.lineTo(0.15, 0);
+                    arrowShape.lineTo(0.15, -0.4);
+                    arrowShape.lineTo(-0.15, -0.4);
+                    arrowShape.lineTo(-0.15, 0);
+                    arrowShape.lineTo(-0.3, 0);
+                    arrowShape.closePath();
+
+                    const extrudeSettings = {
+                        depth: 0.1,
+                        bevelEnabled: true,
+                        bevelThickness: 0.02,
+                        bevelSize: 0.02,
+                        bevelSegments: 3
+                    };
+
+                    const arrowMaterial = new THREE.MeshStandardMaterial({
+                        color: 0x00ffff,
+                        metalness: 0.9,
+                        roughness: 0.1,
+                        emissive: 0x00ffaa,
+                        emissiveIntensity: 0.8
+                    });
+
+                    const arrowGeometry = new THREE.ExtrudeGeometry(arrowShape, extrudeSettings);
+                    const arrow = new THREE.Mesh(arrowGeometry, arrowMaterial);
+                    arrow.rotation.x = -Math.PI / 2;
+                    arrow.position.y = 0.3;
+                    group.add(arrow);
+
+                    const ringGeometry = new THREE.RingGeometry(0.4, 0.5, 32);
+                    const ring = new THREE.Mesh(ringGeometry, new THREE.MeshBasicMaterial({
+                        color: 0x00ffff,
+                        side: THREE.DoubleSide,
+                        transparent: true,
+                        opacity: 0.6
+                    }));
+                    ring.rotation.x = -Math.PI / 2;
+                    ring.position.y = 0.02;
+                    group.add(ring);
+
+                    return group;
+                },
+                animate: (mesh, time) => {
+                    mesh.children[0].rotation.y = time * 2;
+                    mesh.children[1].rotation.z = time * 3;
+                }
+            },
+            {
+                id: 'airflow',
+                name: '气流（向上）',
+                tag: '气流',
+                tagClass: 'ground',
+                health: '-',
+                healthClass: '',
+                reward: '上升至8格高度',
+                location: '地面轨道',
+                description: '蓝色粒子向上流动的气流，玩家进入后会被向上托举至8格高度。可用于躲避下方障碍物或到达高处平台。',
+                create: (scene) => {
+                    const group = new THREE.Group();
+                    
+                    const particleCount = 30;
+                    const geometry = new THREE.BufferGeometry();
+                    const positions = new Float32Array(particleCount * 3);
+                    
+                    for (let i = 0; i < particleCount; i++) {
+                        positions[i * 3] = (Math.random() - 0.5) * 1.2;
+                        positions[i * 3 + 1] = Math.random() * 8;
+                        positions[i * 3 + 2] = (Math.random() - 0.5) * 7.5;
+                    }
+                    
+                    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                    
+                    const material = new THREE.PointsMaterial({
+                        color: 0x00ffff,
+                        size: 0.3,
+                        transparent: true,
+                        opacity: 0.8,
+                        blending: THREE.AdditiveBlending
+                    });
+                    
+                    const particles = new THREE.Points(geometry, material);
+                    particles.frustumCulled = false;
+                    group.add(particles);
+                    
+                    return group;
+                },
+                animate: (mesh, time) => {
+                    mesh.rotation.y = time * 0.3;
+                }
+            },
+            {
+                id: 'large_airflow',
+                name: '大型气流',
+                tag: '气流',
+                tagClass: 'ground',
+                health: '-',
+                healthClass: '',
+                reward: '上升至40格高度',
+                location: '地面轨道',
+                description: '更强力的蓝色气流，将玩家托举至40格高度，可直接到达气流跑道。每隔约24条轨道生成一次，长度更长，推力更强。',
+                create: (scene) => {
+                    const group = new THREE.Group();
+                    
+                    const particleCount = 60;
+                    const geometry = new THREE.BufferGeometry();
+                    const positions = new Float32Array(particleCount * 3);
+                    
+                    for (let i = 0; i < particleCount; i++) {
+                        positions[i * 3] = (Math.random() - 0.5) * 2;
+                        positions[i * 3 + 1] = Math.random() * 15;
+                        positions[i * 3 + 2] = (Math.random() - 0.5) * 15;
+                    }
+                    
+                    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                    
+                    const material = new THREE.PointsMaterial({
+                        color: 0x00aaff,
+                        size: 0.4,
+                        transparent: true,
+                        opacity: 0.9,
+                        blending: THREE.AdditiveBlending
+                    });
+                    
+                    const particles = new THREE.Points(geometry, material);
+                    particles.frustumCulled = false;
+                    group.add(particles);
+                    
+                    return group;
+                },
+                animate: (mesh, time) => {
+                    mesh.rotation.y = time * 0.2;
+                }
+            },
+            {
+                id: 'downward_airflow',
+                name: '向下气流',
+                tag: '气流',
+                tagClass: 'airway',
+                health: '-',
+                healthClass: '',
+                reward: '返回地面轨道',
+                location: '气流跑道',
+                description: '红色粒子向下流动的气流，玩家进入后会被向下推送，从气流跑道返回地面轨道。每隔600-1000格在随机一条气流跑道上生成。',
+                create: (scene) => {
+                    const group = new THREE.Group();
+                    
+                    const particleCount = 40;
+                    const geometry = new THREE.BufferGeometry();
+                    const positions = new Float32Array(particleCount * 3);
+                    
+                    for (let i = 0; i < particleCount; i++) {
+                        positions[i * 3] = (Math.random() - 0.5) * 2;
+                        positions[i * 3 + 1] = Math.random() * 8;
+                        positions[i * 3 + 2] = (Math.random() - 0.5) * 10;
+                    }
+                    
+                    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                    
+                    const material = new THREE.PointsMaterial({
+                        color: 0xff4444,
+                        size: 0.4,
+                        transparent: true,
+                        opacity: 0.9,
+                        blending: THREE.AdditiveBlending
+                    });
+                    
+                    const particles = new THREE.Points(geometry, material);
+                    particles.frustumCulled = false;
+                    group.add(particles);
+
+                    const arrowShape = new THREE.Shape();
+                    arrowShape.moveTo(0, -1.5);
+                    arrowShape.lineTo(0.8, 0);
+                    arrowShape.lineTo(0.3, 0);
+                    arrowShape.lineTo(0.3, 1);
+                    arrowShape.lineTo(-0.3, 1);
+                    arrowShape.lineTo(-0.3, 0);
+                    arrowShape.lineTo(-0.8, 0);
+                    arrowShape.closePath();
+                    
+                    const arrowGeometry = new THREE.ShapeGeometry(arrowShape);
+                    const arrowMaterial = new THREE.MeshBasicMaterial({
+                        color: 0xff4444,
+                        side: THREE.DoubleSide,
+                        transparent: true,
+                        opacity: 0.9
+                    });
+                    const arrow = new THREE.Mesh(arrowGeometry, arrowMaterial);
+                    arrow.rotation.x = -Math.PI / 2;
+                    arrow.position.set(0, 0.5, 0);
+                    arrow.scale.set(1.5, 1.5, 1.5);
+                    group.add(arrow);
+                    
+                    return group;
+                },
+                animate: (mesh, time) => {
+                    mesh.rotation.y = time * 0.3;
+                }
+            },
+            {
+                id: 'wind_ring',
+                name: '加速风环',
+                tag: '道具',
+                tagClass: 'airway',
+                health: '-',
+                healthClass: '',
+                reward: '8格/秒加速，持续5秒',
+                location: '气流跑道',
+                description: '橙色圆形风环，竖立于气流跑道上。玩家穿过风环后获得8格/秒的速度提升，持续5秒。每隔约300格生成一次，直径与气流跑道宽度一致。',
+                create: (scene) => {
+                    const group = new THREE.Group();
+                    const ringRadius = 1.5;
+
+                    const windRingGeometry = new THREE.RingGeometry(ringRadius * 0.8, ringRadius, 64);
+                    const windRingMaterial = new THREE.MeshBasicMaterial({
+                        color: 0xff8800,
+                        side: THREE.DoubleSide,
+                        transparent: true,
+                        opacity: 0.8
+                    });
+                    const windRing = new THREE.Mesh(windRingGeometry, windRingMaterial);
+                    group.add(windRing);
+
+                    const windRingGlowGeometry = new THREE.RingGeometry(ringRadius * 0.7, ringRadius * 1.1, 64);
+                    const windRingGlowMaterial = new THREE.MeshBasicMaterial({
+                        color: 0xffaa00,
+                        side: THREE.DoubleSide,
+                        transparent: true,
+                        opacity: 0.4
+                    });
+                    const windRingGlow = new THREE.Mesh(windRingGlowGeometry, windRingGlowMaterial);
+                    group.add(windRingGlow);
+
+                    const particleCount = 10;
+                    const particleGeometry = new THREE.BufferGeometry();
+                    const positions = new Float32Array(particleCount * 3);
+
+                    for (let i = 0; i < particleCount; i++) {
+                        const angle = (i / particleCount) * Math.PI * 2;
+                        const dist = ringRadius * 0.9;
+                        const height = (Math.random() - 0.5) * ringRadius * 0.5;
+                        positions[i * 3] = Math.cos(angle) * dist;
+                        positions[i * 3 + 1] = height;
+                        positions[i * 3 + 2] = Math.sin(angle) * dist;
+                    }
+
+                    particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                    const particleMaterial = new THREE.PointsMaterial({
+                        color: 0xffcc00,
+                        size: 0.15,
+                        transparent: true,
+                        opacity: 0.9,
+                        blending: THREE.AdditiveBlending
+                    });
+                    const particles = new THREE.Points(particleGeometry, particleMaterial);
+                    particles.frustumCulled = false;
+                    group.add(particles);
+
+                    return group;
+                },
+                animate: (mesh, time) => {
+                    mesh.children[0].rotation.x = time * 0.5;
+                    mesh.children[1].rotation.x = time * 0.5 + 0.5;
+                }
+            }
+        ];
+
+        let currentIndex = 0;
+        let currentObstacle = null;
+        let mouseDown = false;
+        let mouseX = 0;
+        let mouseY = 0;
+        let rotateX = 0;
+        let rotateY = 0;
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0a1a);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth * 0.65 / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 3, 8);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas'), antialias: true });
+        renderer.setSize(window.innerWidth * 0.65, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        const ambientLight = new THREE.AmbientLight(0x333366, 0.6);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
+        directionalLight.position.set(5, 10, 5);
+        scene.add(directionalLight);
+
+        const pointLight = new THREE.PointLight(0x00ffff, 1.5, 20);
+        pointLight.position.set(0, 5, 3);
+        scene.add(pointLight);
+
+        const gridHelper = new THREE.GridHelper(20, 20, 0x333366, 0x222244);
+        gridHelper.position.y = -0.01;
+        scene.add(gridHelper);
+
+        function loadObstacle(index) {
+            if (currentObstacle) {
+                scene.remove(currentObstacle);
+                currentObstacle.traverse((child) => {
+                    if (child.geometry) child.geometry.dispose();
+                    if (child.material) {
+                        if (Array.isArray(child.material)) {
+                            child.material.forEach(m => m.dispose());
+                        } else {
+                            child.material.dispose();
+                        }
+                    }
+                });
+                currentObstacle = null;
+            }
+
+            const obstacle = obstacles[index];
+            currentObstacle = obstacle.create(scene);
+            scene.add(currentObstacle);
+
+            updateInfoPanel(obstacle);
+            updateNavButtons();
+        }
+
+        function updateInfoPanel(obstacle) {
+            document.getElementById('obstacleName').textContent = obstacle.name;
+            document.getElementById('obstacleTag').textContent = obstacle.tag;
+            document.getElementById('obstacleTag').className = `obstacle-tag ${obstacle.tagClass}`;
+            document.getElementById('obstacleHealth').textContent = obstacle.health;
+            document.getElementById('obstacleHealth').className = `info-value ${obstacle.healthClass}`;
+            document.getElementById('obstacleReward').textContent = obstacle.reward;
+            document.getElementById('obstacleLocation').textContent = obstacle.location;
+            document.getElementById('obstacleDesc').innerHTML = obstacle.description;
+            document.getElementById('obstacleIndex').textContent = `${currentIndex + 1} / ${obstacles.length}`;
+        }
+
+        function updateNavButtons() {
+            document.getElementById('prevBtn').disabled = currentIndex === 0;
+            document.getElementById('nextBtn').disabled = currentIndex === obstacles.length - 1;
+        }
+
+        function prevObstacle() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                loadObstacle(currentIndex);
+            }
+        }
+
+        function nextObstacle() {
+            if (currentIndex < obstacles.length - 1) {
+                currentIndex++;
+                loadObstacle(currentIndex);
+            }
+        }
+
+        function goBack() {
+            window.location.href = 'track-game完整版.html';
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const time = Date.now() * 0.001;
+
+            if (currentObstacle) {
+                currentObstacle.rotation.y += 0.005;
+                
+                const obstacle = obstacles[currentIndex];
+                if (obstacle.animate) {
+                    obstacle.animate(currentObstacle, time);
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        document.addEventListener('mousedown', (e) => {
+            if (e.target.id === 'canvas') {
+                mouseDown = true;
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+            }
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!mouseDown) return;
+
+            const deltaX = e.clientX - mouseX;
+            const deltaY = e.clientY - mouseY;
+
+            rotateY += deltaX * 0.01;
+            rotateX += deltaY * 0.01;
+            rotateX = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, rotateX));
+
+            const radius = 8;
+            camera.position.x = Math.sin(rotateY) * Math.cos(rotateX) * radius;
+            camera.position.y = Math.sin(rotateX) * radius + 2;
+            camera.position.z = Math.cos(rotateY) * Math.cos(rotateX) * radius;
+            camera.lookAt(0, 1, 0);
+
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+
+        document.addEventListener('mouseup', () => {
+            mouseDown = false;
+        });
+
+        document.addEventListener('wheel', (e) => {
+            if (e.target.id === 'canvas') {
+                const delta = e.deltaY * 0.01;
+                const zoomSpeed = 2;
+                camera.position.multiplyScalar(1 + delta * zoomSpeed);
+                
+                const minDistance = 3;
+                const maxDistance = 15;
+                const distance = camera.position.length();
+                if (distance < minDistance || distance > maxDistance) {
+                    camera.position.setLength(Math.max(minDistance, Math.min(maxDistance, distance)));
+                }
+                camera.lookAt(0, 1, 0);
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth * 0.65 / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth * 0.65, window.innerHeight);
+        });
+
+        loadObstacle(0);
+        animate();
+    </script>
+</body>
+</html>
